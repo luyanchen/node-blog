@@ -23,7 +23,7 @@ var blogScheMa = new Schema({
 	content : String,
 	accessCount : Number,
 	commentCount : Number,
-	publishTime : Date
+	publishTime : Date,
 });
 var commentScheMa = new Schema({
 	blogid : String,
@@ -31,9 +31,30 @@ var commentScheMa = new Schema({
 	nickname : String,
 	headimg : String,
 	content : String,
-	publishTime : Date
+	publishTime : Date,
+	//increaseid : Number
 }); 
+
+var counterScheMa = new Schema({
+	sequence_value: Number,
+	_id:String
+});	
+function getNextSequenceValue(sequenceName){
+   var sequenceDocument = db.counter.findAndModify(
+      {
+         query:{_id: sequenceName },
+         update: {$inc:{sequence_value:1}},
+         new:true
+      });
+   return sequenceDocument.sequence_value;
+}
+
+
 exports.code = db.model('code', codeScheMa); 
 exports.user = db.model('user', userScheMa); 
 exports.blog = db.model('blog', blogScheMa); 
 exports.comment = db.model('comment', commentScheMa); 
+exports.counter = db.model('counter', counterScheMa);
+exports.getNextSequenceValue = getNextSequenceValue;
+
+

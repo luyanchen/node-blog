@@ -4,6 +4,7 @@ var code =  require('../models/db.js').code;
 var user =  require('../models/db.js').user;
 var blog =  require('../models/db.js').blog;
 var comment =  require('../models/db.js').comment;
+var getNextSequenceValue =  require('../models/db.js').getNextSequenceValue;
 
 //设置跨域访问  
 router.all('*', function(req, res, next) {  
@@ -78,9 +79,9 @@ router.get('/login/code', function(req, res) {
 });
 
 //验证验证码
-router.get('/login/verifycode', function(req, res) {
-    var _phone = req.query.phone||'';
-    var _code = req.query.code||'';
+router.post('/login/verifycode', function(req, res) {
+    var _phone = req.body.phone||'';
+    var _code = req.body.code||'';
 
 	code.count({phone:_phone,code:_code}).then(function(doc){ 
 		//console.log(doc);
@@ -103,11 +104,11 @@ router.get('/login/verifycode', function(req, res) {
   
 });
 //注册
-router.get('/login/register', function(req, res) {
-    var _phone = req.query.phone||'';
-    var _nickname = req.query.nickname;
-    var _sex = req.query.sex;
-    var _password = req.query.pwd;
+router.post('/login/register', function(req, res) {
+    var _phone = req.body.phone||'';
+    var _nickname = req.body.nickname;
+    var _sex = req.body.sex;
+    var _password = req.body.pwd;
 
     var _headimg = 'http://'+req.headers.host+'/images/headimg'+Math.floor(Math.random()*10)+'.png'
 	console.log({phone:_phone,password:_password})
@@ -146,9 +147,9 @@ router.get('/login/register', function(req, res) {
   
 });
 //登陆
-router.get('/login/login', function(req, res) {
-    var _phone = req.query.phone||'';
-    var _password = req.query.pwd;
+router.post('/login/login', function(req, res) {
+    var _phone = req.body.phone||'';
+    var _password = req.body.pwd;
 	console.log({phone:_phone,password:_password})
 	user.findOne({phone:_phone,password:_password}).then(function(doc){ 
 		var _errorinfo = '',_errorcode = 200,_token = '';
@@ -190,11 +191,11 @@ router.get('/login/login', function(req, res) {
 
 
 //修改密码
-router.get('/login/editpwd', function(req, res) {
-    var _userid = req.query.userid;
-    var _oldpassword = req.query.oldpwd;
-    var _password = req.query.pwd;
-    var _token = req.query.token;
+router.post('/login/editpwd', function(req, res) {
+    var _userid = req.body.userid;
+    var _oldpassword = req.body.oldpwd;
+    var _password = req.body.pwd;
+    var _token = req.body.token;
 
 	user.update({_id:_userid,password:_oldpassword,token:_token,},{$set:{password:_password}}).then(function(obj){	
 		console.log(obj)
@@ -216,13 +217,13 @@ router.get('/login/editpwd', function(req, res) {
   
 });
 //发表博客
-router.get('/blog/add', function(req, res) {
-    var _userid = req.query.userid;
-    var _headimg = req.query.headimg;
-    var _nickname = req.query.nickname;
-    var _title = req.query.title;
-    var _content = req.query.content;
-    var _token = req.query.token;
+router.post('/blog/add', function(req, res) {
+    var _userid = req.body.userid;
+    var _headimg = req.body.headimg;
+    var _nickname = req.body.nickname;
+    var _title = req.body.title;
+    var _content = req.body.content;
+    var _token = req.body.token;
    
 	//验证token
 	user.findOne({_id:_userid,token:_token}).then(function(doc){ 
@@ -234,6 +235,7 @@ router.get('/blog/add', function(req, res) {
 		    _Access = false;		
 		}else{			
 			var iBlog = new blog({"authorid":_userid,"nickname":_nickname,"headimg":_headimg,"title":_title,"content":_content,"accessCount":0,"commentCount":0,"publishTime":Date.parse(new Date())});
+		//	var iBlog = new blog({"authorid":_userid,"nickname":_nickname,"headimg":_headimg,"title":_title,"content":_content,"accessCount":0,"commentCount":0,"publishTime":Date.parse(new Date()),"increaseid":getNextSequenceValue("counterid")});
 			
 			iBlog.save(function(err){ 
 				var _errorinfo = '',_errorcode = 200;
@@ -288,6 +290,7 @@ router.get('/blog/detail', function(req, res) {
 //博客列表
 router.get('/blog/list', function(req, res) {
     var _userid = req.query.userid||'';
+    var _class = req.query.class||'';
     var _keyword = req.query.keyword||'';
     var _limit = parseInt(req.query.limit)||1000;
     var _flag = req.query.flag||'';
@@ -296,23 +299,25 @@ router.get('/blog/list', function(req, res) {
     
 	const reg = new RegExp(_keyword, 'i') //不区分大小写
 	var _query = {};
-	if(_userid != ''){
+	if(_class == 2){
+		//我的
 		_query['authorid'] = _userid;
 
 	}
 	if(_flag != ''){
-    	_query['publishTime']= tmp;//大于或小于flag发布时间的列表	
-    	//下拉刷新上拉加载
+		//下拉刷新上拉加载
 		var condition = '$gt';
     	if(_direction == "up"){
     		condition = '$lt';
    		}
    		var tmp = {};
-   		tmp[condition] = _flag;	
+   		tmp[condition] = _flag;
+    	_query['publishTime']= tmp;//大于或小于flag发布时间的列表	
+ 	
 	}
 	//模糊匹配
     _query['$or']=[{"title":{$regex : reg}},{"content": {$regex : reg}},{"nickname": {$regex : reg}}];
-    	
+    console.log(_query);
 	blog.find(_query).sort({'publishTime': -1}).limit(_limit).then(function(doc){ 
 		var _errorinfo = '',_errorcode = 200;
 
@@ -320,6 +325,45 @@ router.get('/blog/list', function(req, res) {
 		var _result = {
 			"code" : 200,
 			"data": doc||[],
+  			"code":_errorcode,
+  			"error":_errorinfo
+		}
+		res.send(_result);
+   });
+  
+});
+//删除评论
+router.post('/blog/delete', function(req, res) {
+    var _blogid = req.body.blogid;
+    var _userid = req.body.userid;
+    var _token = req.body.token;
+  
+	//验证token
+	user.findOne({_id:_userid,token:_token}).then(function(doc){ 
+		var _errorinfo = '',_errorcode = 200,_Access = true;
+		console.log(doc);
+		if(doc == null){
+			_errorinfo = "登陆异常，请重新登陆";
+		    _errorcode = 201;
+		    _Access = false;		
+		}else{		
+			console.log(_blogid)	
+			blog.remove({_id:_blogid}).then(function(err){ 
+				var _errorinfo = '',_errorcode = 200,_Access = true;  				 
+				//返回json
+				if(err){
+					_errorinfo = "系统繁忙，请稍后重试";
+		    		_errorcode = 501;
+		    		_Access = false;
+				}
+		   });
+			
+    	}   				 
+		//返回json
+		var _result = {
+			"data":{
+    			"Access":_Access,
+  			},
   			"code":_errorcode,
   			"error":_errorinfo
 		}
@@ -345,13 +389,13 @@ router.get('/blog/comment/list/', function(req, res) {
   
 });
 //添加评论
-router.get('/blog/comment/add/', function(req, res) {
-    var _blogid = req.query.blogid;
-    var _userid = req.query.userid;
-    var _token = req.query.token;
-    var _nickname = req.query.nickname;
-    var _headimg = req.query.headimg;
-    var _content = req.query.content;
+router.post('/blog/comment/add/', function(req, res) {
+    var _blogid = req.body.blogid;
+    var _userid = req.body.userid;
+    var _token = req.body.token;
+    var _nickname = req.body.nickname;
+    var _headimg = req.body.headimg;
+    var _content = req.body.content;
   
 	//验证token
 	user.findOne({_id:_userid,token:_token}).then(function(doc){ 
@@ -394,11 +438,11 @@ router.get('/blog/comment/add/', function(req, res) {
   
 });
 //删除评论
-router.get('/blog/comment/delete/', function(req, res) {
-    var _blogid = req.query.blogid;
-    var _commentid = req.query.commentid;
-    var _userid = req.query.userid;
-    var _token = req.query.token;
+router.post('/blog/comment/delete/', function(req, res) {
+    var _blogid = req.body.blogid;
+    var _commentid = req.body.commentid;
+    var _userid = req.body.userid;
+    var _token = req.body.token;
   
 	//验证token
 	user.findOne({_id:_userid,token:_token}).then(function(doc){ 
@@ -440,4 +484,7 @@ router.get('/blog/comment/delete/', function(req, res) {
    });
   
 });
+
+
+
 module.exports = router;
