@@ -4,7 +4,6 @@ var code =  require('../models/db.js').code;
 var user =  require('../models/db.js').user;
 var blog =  require('../models/db.js').blog;
 var comment =  require('../models/db.js').comment;
-var getNextSequenceValue =  require('../models/db.js').getNextSequenceValue;
 
 //设置跨域访问  
 router.all('*', function(req, res, next) {  
@@ -196,15 +195,23 @@ router.post('/login/editpwd', function(req, res) {
     var _oldpassword = req.body.oldpwd;
     var _password = req.body.pwd;
     var _token = req.body.token;
-
-	user.update({_id:_userid,password:_oldpassword,token:_token,},{$set:{password:_password}}).then(function(obj){	
-		console.log(obj)
+	user.count({_id:_userid,password:_oldpassword,token:_token}).then(function(num){
 		var _errorinfo = '',_errorcode = 200,_Access =true;
-		if (!obj.ok){
+		console.log(num)
+		if(num==0){		
 		    _errorinfo = "密码错误";
 			_errorcode = 201;
 		    _Access = false;
-   		} 
+   		}else{
+   			user.update({_id:_userid},{$set:{password:_password}}).then(function(obj){	
+   			console.log(obj)			
+				if (!obj.ok){
+				    _errorinfo = "系统繁忙，请稍后重试";
+					_errorcode = 501;
+				    _Access = false;
+		   		} 
+		     });
+   		}
 		var _result = {
 			"data":{
     			"Access":_Access
@@ -267,8 +274,8 @@ router.get('/blog/detail', function(req, res) {
 		var _errorinfo = '',_errorcode = 200;
 		console.log(doc);
 		if(doc == null){
-			_errorinfo = "操作错误，请重试";
-		    _errorcode = 201;	
+			_errorinfo = "该博客已删除或不存在";
+		    _errorcode = 202;	
 		}else{			
 			blog.update({_id:_blogid}, {'$inc':{'accessCount':1}}).then(function(err){
 				if(err){
@@ -405,9 +412,17 @@ router.post('/blog/comment/add/', function(req, res) {
 			_errorinfo = "登陆异常，请重新登陆";
 		    _errorcode = 201;
 		    _Access = false;		
-		}else{			
-			var iComment = new comment({"blogid":_blogid,"userid":_userid,"nickname":_nickname,"headimg":_headimg,"content":_content,"publishTime":Date.parse(new Date())});
-			
+		}else{
+		    var _item = {
+		    	"blogid":_blogid,
+		    	"userid":_userid,
+		    	"nickname":_nickname,
+		    	"headimg":_headimg,
+		    	"content":_content,
+		    	"publishTime":Date.parse(new Date())
+		    };
+					
+			var iComment = new comment(_item);
 			iComment.save(function(err){ 
 				var _errorinfo = '',_errorcode = 200;
 				if (err) {
@@ -415,20 +430,20 @@ router.post('/blog/comment/add/', function(req, res) {
 				    _errorcode = 501;
         		//	console.log('保存失败');
     			}
+
     			blog.update({_id:_blogid}, {'$inc':{'commentCount':1}}).then(function(err){
 					if(err){
 						_errorinfo = "系统繁忙，请稍后重试";
 					    _errorcode = 501;
 					}
 				}); 
+
     		});
+    		_item._id = iComment._id;
     	}   				 
 		//返回json
 		var _result = {
-			"data":{
-    			"Access":_Access,
-    			"commentid":iComment._id
-  			},
+			"data":_item,
   			"code":_errorcode,
   			"error":_errorinfo
 		}
