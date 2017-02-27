@@ -26,3 +26,16 @@ api路径/router/index.js
 ####8)app.js，/router/index.js,/module/db.js分别改为本demo下的文件
 ####9)node app 启动项目
 
+#API：
+获取验证码（6位数字）: GET /login/code
+验证码校验: POST /login/verifycode
+####用户注册: POST /login/register
+####用户登录：POST /login/login
+####修改密码：POST /login/editpwd
+####发表博客：POST /blog/add
+####博客详情：GET /blog/detail
+####博客列表：GET /blog/list
+####删除博客：POST /blog/delete
+####评论列表：POST /blog/comment/list/
+####添加评论：POST /blog/comment/add/
+####删除评论：POST /blog/comment/delete/
