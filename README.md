@@ -1,6 +1,6 @@
 # node-blog
 nodejs+express+mongodb架构
-简单的mini blog应用api，结合前端代码：https://github.com/luyanchen/nej-app/
+简单的mini blog应用api，配合前端代码，RESTful API：https://github.com/luyanchen/nej-app/
 
 mongodb：对应数据库为blog
 启动:node app
@@ -39,3 +39,63 @@ api路径/router/index.js
 ####评论列表: POST /blog/comment/list/
 ####添加评论: POST /blog/comment/add/
 ####删除评论: POST /blog/comment/delete/
+
+#Database
+
+models/db.js 定义4个表，分别是验证码、用户、博客、评论表。
+<pre><code>
+var mongoose = require('mongoose');
+mongoose.Promise = global.Promise;
+var db = mongoose.connect('mongodb://localhost/blog');//；连接数据库
+var Schema = mongoose.Schema;   //  创建模型
+
+var codeScheMa = new Schema({
+	phone : String,
+	code : String
+});
+var userScheMa = new Schema({
+	phone : String,
+	nickname : String,
+	password : String,
+	headimg : String,
+	sex: String,
+	token:String
+}); 
+var blogScheMa = new Schema({
+	authorid : String,
+	headimg : String,
+	nickname : String,
+	title : String,
+	content : String,
+	accessCount : Number,
+	commentCount : Number,
+	publishTime : Date,
+});
+var commentScheMa = new Schema({
+	blogid : String,
+	userid : String,
+	nickname : String,
+	headimg : String,
+	content : String,
+	publishTime : Date,
+
+}); 
+
+exports.code = db.model('code', codeScheMa); 
+exports.user = db.model('user', userScheMa); 
+exports.blog = db.model('blog', blogScheMa); 
+exports.comment = db.model('comment', commentScheMa); 
+</code></pre>
+
+#设置跨域访问
+<code><pre>
+//设置跨域访问  
+router.all('*', function(req, res, next) {  
+    res.header("Access-Control-Allow-Origin", "*");  
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");  
+    res.header("Access-Control-Allow-Methods","PUT,POST,GET,DELETE,OPTIONS");  
+    res.header("X-Powered-By",'3.2.1')  
+    res.header("Content-Type", "application/json;charset=utf-8");  
+    next();  
+}); 
+</code></pre>
