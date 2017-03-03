@@ -1,10 +1,8 @@
 # node-blog
-nodejs+express+mongodb架构
-简单的mini blog应用api，配合前端代码，RESTful API：https://github.com/luyanchen/nej-app/
-
+nodejs+express+mongodb架构,配合前端代码：https://github.com/luyanchen/nej-app/简单的mini blog应用API，
 mongodb：对应数据库为blog
 启动:node app
-
+API根路径:http://localhost:3000/
 #开发环境
 <ul>
 <li>nodejs v6.9.5</li>
@@ -12,7 +10,7 @@ mongodb：对应数据库为blog
 <li>mongodb v3.3.0</li>
 <li>mongoose v4.8.1</li>
 </ul>
-api路径/router/index.js
+api:/router/index.js
 
 #环境搭建：
 
