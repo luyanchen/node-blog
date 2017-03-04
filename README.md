@@ -1,5 +1,5 @@
 # node-blog
-nodejs+express+mongodb架构,配合前端代码：https://github.com/luyanchen/nej-app/简单的mini blog应用API，
+nodejs+express+mongodb架构,配合前端代码：https://github.com/luyanchen/nej-app/ 简单的mini blog应用API，
 mongodb：对应数据库为blog
 启动:node app
 API根路径:http://localhost:3000/
